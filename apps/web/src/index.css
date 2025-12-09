@@ -128,7 +128,80 @@ body {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Moveable Custom Styles */
+.canvas-moveable .moveable-control {
+  background: #fff !important;
+  border: 1.5px solid #3b82f6 !important;
+  /* Blue-500 */
+  border-radius: 2px !important;
+  /* Slightly rounded squares (Figma style) */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+  width: 10px !important;
+  height: 10px !important;
+  margin-top: -5px !important;
+  margin-left: -5px !important;
+  transition: transform 0.1s ease, background-color 0.1s ease;
+}
+
+.canvas-moveable .moveable-control:hover {
+  transform: scale(1.2);
+  background: #eff6ff !important;
+  /* Blue-50 */
+  border-color: #2563eb !important;
+  /* Blue-600 */
+}
+
+.canvas-moveable .moveable-line {
+  background: #3b82f6 !important;
+  height: 1px !important;
+  /* Thinner lines for precision */
+  opacity: 0.9;
+}
+
+/* Specific adjustments for rotation handle */
+.canvas-moveable .moveable-rotation-line {
+  background: #3b82f6 !important;
+  height: 50px !important;
+  /* Increased length to push handle away from resize corners */
+  width: 1px !important;
+  transform-origin: bottom center !important;
+}
+
+.canvas-moveable .moveable-rotation {
+  border: 1.5px solid #3b82f6 !important;
+  background: #fff !important;
+  border-radius: 50% !important;
+  /* Keep rotation handle round */
+
+
+
+
+  /* Center it */
+  margin-left: -6px !important;
+}
+
+.canvas-moveable .moveable-rotation:hover {
+  background: #3b82f6 !important;
+  cursor: grab;
+}
+
+/* Selection box outline */
+.canvas-moveable .moveable-box {
+  background: rgba(59, 130, 246, 0.05) !important;
+  /* Very subtle blue tint */
+}
+
+/* Overlay Box (The visible selection rectangle) */
+.overlay-box {
+  background-color: rgba(59, 130, 246, 0.15);
+  /* Reduced opacity blue fill */
+  border: 1px solid rgba(59, 130, 246, 0.6);
+  z-index: 20;
+  /* Ensure it is visible */
 }

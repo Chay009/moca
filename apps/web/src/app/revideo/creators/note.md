@@ -1,0 +1,2 @@
+every creator or component/element type must have props refernce and animation props refernce
+C:\Users\chaitanya\Desktop\revideo-motion-editor\beta-v1\apps\web\src\app\revideo\animations_and_visuals.md
