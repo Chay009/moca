@@ -24,6 +24,8 @@ interface SceneStore {
   currentTime: number;
   isPlaying: boolean;
   selectedElementId: string | null;
+  selectedRevideoNode: any | null; // Reference to actual Revideo node for direct updates
+  playMode: 'scene' | 'all'; // Play current scene or all scenes with transitions
 
   // Zoom target overlay (for crosshair on player)
   zoomTargetOverlay: ZoomTargetOverlay;
@@ -47,7 +49,9 @@ interface SceneStore {
   // Playback
   setCurrentTime: (time: number) => void;
   setIsPlaying: (playing: boolean) => void;
+  setPlayMode: (mode: 'scene' | 'all') => void;
   setSelectedElementId: (id: string | null) => void;
+  setSelectedRevideoNode: (node: any | null) => void; // Set Revideo node reference
 
   // Zoom target overlay
   setZoomTargetOverlay: (overlay: Partial<ZoomTargetOverlay>) => void;
@@ -61,6 +65,10 @@ interface SceneStore {
 
 
 
+  // Force player refresh/render
+  refreshTrigger: number;
+  refreshPlayer: () => void;
+
   // Computed
   getTotalDuration: () => number;
   reset: () => void;
@@ -70,11 +78,15 @@ export const useSceneStore = create<SceneStore>((set, get) => ({
   // Initial state
   currentSceneIndex: 0,
   currentTime: 0,
+  playMode: 'scene',
   isPlaying: true, // this is must tand this is respsonsible for player to be played the actual animations
   selectedElementId: null,
+  selectedRevideoNode: null, // Reference to actual Revideo node
 
   // Zoom target overlay (for crosshair on player)
   zoomTargetOverlay: { visible: false, x: 0, y: 0 },
+
+  refreshTrigger: 0,
 
 
 
@@ -204,9 +216,11 @@ export const useSceneStore = create<SceneStore>((set, get) => ({
   // Duration is updated via onDurationChanged event subscription in CanvasPlayer
 
   // Playback
+  setPlayMode: (mode) => set({ playMode: mode }),
   setCurrentTime: (time) => set({ currentTime: time }),
   setIsPlaying: (playing) => set({ isPlaying: playing }),
   setSelectedElementId: (id) => set({ selectedElementId: id }),
+  setSelectedRevideoNode: (node) => set({ selectedRevideoNode: node }),
 
   // Zoom target overlay actions
   setZoomTargetOverlay: (overlay) => set((state) => ({
@@ -216,6 +230,9 @@ export const useSceneStore = create<SceneStore>((set, get) => ({
   hideZoomTarget: () => set((state) => ({
     zoomTargetOverlay: { ...state.zoomTargetOverlay, visible: false }
   })),
+
+  // Force player refresh
+  refreshPlayer: () => set(state => ({ refreshTrigger: state.refreshTrigger + 1 })),
 
 
 

@@ -4,13 +4,9 @@
  */
 import type { AnimationConfig, AudioConfig, TextEffectConfig } from '@/app/revideo';
 
-// Define TextEffectPresetType locally to avoid importing constants at runtime
-export type TextEffectPresetType = 'text-simple' | 'text-bounce' | 'text-shining';
-
 // Extended element types (supports all component types including Three.js)
 export type ElementType =
   | 'text' | 'animated-text'
-  | 'text-simple' | 'text-bounce' | 'text-shining'  // Text preset types
   | 'rect' | 'circle' | 'line' | 'polygon'
   | 'image' | 'image-simple' | 'video' | 'video-simple' | 'audio'  // Media types
   | 'button' | 'card' | 'badge' | 'progress' | 'counter'

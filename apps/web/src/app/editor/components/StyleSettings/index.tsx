@@ -20,17 +20,35 @@ export default function StyleSettings() {
     const selectedElementId = useSceneStore((state) => state.selectedElementId);
     const currentScene = useSceneStore((state) => state.getCurrentScene());
     const updateElementInScene = useSceneStore((state) => state.updateElementInScene);
+    const selectedRevideoNode = useSceneStore((state) => state.selectedRevideoNode);
 
     // Get selected element
     const selectedElement = currentScene?.elements.find((el) => el.id === selectedElementId);
 
-    // Update property callback
+    // Update property callback - updates BOTH store AND Revideo node directly
     const updateProperty = useCallback((key: string, value: any) => {
         if (!selectedElementId || !currentScene) return;
+
+        // 1. Update store (for persistence and UI state)
         updateElementInScene(currentScene.id, selectedElementId, {
             properties: { [key]: value },
         });
-    }, [selectedElementId, currentScene, updateElementInScene]);
+
+        // 2. Update Revideo node directly (for immediate visual feedback)
+        if (selectedRevideoNode) {
+            if (typeof selectedRevideoNode[key] === 'function') {
+                console.log(`🎨 Direct node update: ${key} = ${value}`);
+                selectedRevideoNode[key](value);
+
+                // Trigger canvas repaint (now uses requestRender, not seek)
+                useSceneStore.getState().refreshPlayer();
+            } else {
+                console.warn(`⚠️ Direct update failed: property '${key}' is not a function on Revideo node`, selectedRevideoNode);
+            }
+        } else {
+            console.warn('⚠️ Direct update failed: selectedRevideoNode is null. Did you click the element on canvas?');
+        }
+    }, [selectedElementId, currentScene, updateElementInScene, selectedRevideoNode]);
 
     // Memoized callbacks for PositionControl
     const updateShadowOffsetX = useCallback((x: number) => updateProperty('shadowOffsetX', x), [updateProperty]);

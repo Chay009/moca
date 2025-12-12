@@ -5,6 +5,14 @@
 import type { SceneElement } from './elements';
 import type { ZoomEvent } from './zoom';
 
+// Scene transition configuration
+export interface SceneTransitionConfig {
+  type: string; // Transition name from registry (e.g., 'fade', 'slide-left', 'glitch')
+  duration?: number; // Override default duration
+  enabled: boolean; // Whether to apply transition
+}
+
+// Legacy support
 export type SceneTransition = 'fade' | 'slide' | 'none';
 
 export interface SceneBackground {
@@ -41,7 +49,7 @@ export interface Scene {
   name: string;
   duration: number;
   elements: SceneElement[];
-  transition?: SceneTransition;
+  transition?: SceneTransition | SceneTransitionConfig; // Support both legacy and new format
 
   // Scene background - supports solid colors, gradients, images, videos, and shaders
   background?: SceneBackground;
@@ -55,4 +63,3 @@ export interface Scene {
   // Camera zoom keyframes for screen recording effects
   zoomEvents?: ZoomEvent[];
 }
-

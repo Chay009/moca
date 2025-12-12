@@ -50,7 +50,7 @@ export const SceneElementPanel = () => {
   const removeElementFromScene = useSceneStore((state) => state.removeElementFromScene);
   const updateScene = useSceneStore((state) => state.updateScene);
 
-  const [selectedType, setSelectedType] = useState<SceneElement['type']>('text-simple');
+  const [selectedType, setSelectedType] = useState<SceneElement['type']>('text');
   const [text, setText] = useState('New Text');
   const [mediaUrl, setMediaUrl] = useState('');
   const [autoAdjustDuration, setAutoAdjustDuration] = useState(true);
@@ -291,7 +291,7 @@ export const SceneElementPanel = () => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="text-simple">Text</SelectItem>
+                <SelectItem value="text">Text</SelectItem>
                 <SelectItem value="image-simple">Image</SelectItem>
                 <SelectItem value="video">Video</SelectItem>
                 <SelectItem value="audio">Audio</SelectItem>

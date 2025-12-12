@@ -4,13 +4,16 @@
  * No persistence for now - simplifies Next.js hydration
  */
 import { create } from 'zustand';
-
+import type { Project as RevideoProject } from '@revideo/core';
 import type { Scene, Project } from '@/types/project';
 
 interface ProjectStore {
   // Multi-project state
   projects: Project[];
   currentProjectId: string | null;
+
+  // Revideo project instance (auto-created from current project's scenes)
+  revideoProject: RevideoProject | null;
 
   // Canvas settings (aspect ratio)
   aspectRatio: '16:9' | '9:16' | '1:1' | '4:3';
@@ -39,6 +42,9 @@ interface ProjectStore {
 
   // Helper method for editorStore to update scenes
   updateProjectScenes: (projectId: string, scenes: Scene[]) => void;
+
+  // Revideo project management
+  recreateRevideoProject: () => void;
 }
 
 // Counter for deterministic IDs
@@ -77,7 +83,7 @@ export const createDefaultScene = (): Scene => {
     elements: [
       {
         id: `el-${elementIdCounter}`,
-        type: 'text-simple',
+        type: 'text',
         properties: {
           x: 0,
           y: -100,
@@ -112,6 +118,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   // Initial state
   projects: [],
   currentProjectId: null,
+  revideoProject: null, // Will be created when first project is added
   aspectRatio: '16:9',
   canvasSize: ASPECT_RATIOS['16:9'],
   playerSettings: {
@@ -197,12 +204,69 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   },
 
   // Helper method for editorStore to update scenes in the current project
-  updateProjectScenes: (projectId, scenes) =>
+  updateProjectScenes: (projectId, scenes) => {
     set((state) => ({
       projects: state.projects.map((p) =>
         p.id === projectId ? { ...p, scenes, updatedAt: new Date() } : p
       ),
-    })),
+    }));
+    // Auto-recreate Revideo project when scenes change
+    get().recreateRevideoProject();
+  },
+
+  // Recreate Revideo project from current project's scenes
+  recreateRevideoProject: () => {
+    const currentProject = get().getCurrentProject();
+    if (!currentProject || !currentProject.scenes || currentProject.scenes.length === 0) {
+      set({ revideoProject: null });
+      return;
+    }
+
+    // Create hash of scene STRUCTURE only (not properties) - recreation is expensive!
+    // Properties should be handled by setVariables + reload, not full recreation
+    const sceneStructureHash = JSON.stringify(
+      currentProject.scenes.map(s => ({
+        id: s.id,
+        elementIds: s.elements?.map(e => e.id),
+        elementTypes: s.elements?.map(e => e.type),
+        transition: s.transition,
+        background: s.background,
+      }))
+    );
+
+    // Check if structure actually changed
+    const lastHash = (get() as any)._lastSceneStructureHash;
+    if (lastHash === sceneStructureHash) {
+      console.log('⏭️ Scene structure unchanged, skipping project recreation');
+      return;
+    }
+
+    // Import here to avoid circular dependency
+    const { makeProject, Vector2 } = require('@revideo/core');
+    const { createProjectFromScenes } = require('@/app/projects/sceneFactory');
+
+    const canvasSize = get().canvasSize;
+    const sceneDescriptions = createProjectFromScenes(currentProject.scenes);
+
+    const newRevideoProject = makeProject({
+      scenes: sceneDescriptions,
+      variables: {},
+      experimentalFeatures: true,
+      settings: {
+        shared: {
+          size: new Vector2(canvasSize.width, canvasSize.height),
+          background: '#000000',
+        },
+        preview: {
+          fps: 30,
+          resolutionScale: 1,
+        },
+      },
+    });
+
+    set({ revideoProject: newRevideoProject, _lastSceneStructureHash: sceneStructureHash } as any);
+    console.log('🎬 Revideo project recreated in store');
+  },
 }));
 
 // Re-export types for backward compatibility

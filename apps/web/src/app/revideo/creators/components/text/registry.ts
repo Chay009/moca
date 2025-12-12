@@ -14,12 +14,8 @@
  */
 
 import type { ComponentRegistry } from '../../types/componentPlugin';
-import { TextSimpleComponent } from './TextSimple/index';
-import { TextBounceComponent } from './TextBounce/index';
-import { TextShiningComponent } from './TextShining/index';
+import { TextComponent } from './Text/index';
 
 export const textComponents: ComponentRegistry = {
-  [TextSimpleComponent.type]: TextSimpleComponent,
-  [TextBounceComponent.type]: TextBounceComponent,
-  [TextShiningComponent.type]: TextShiningComponent,
+  [TextComponent.type]: TextComponent,
 };

@@ -4,11 +4,12 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Copy, Focus, GripVertical, Layout, MoreHorizontal, Plus, Trash2 } from "lucide-react";
+import { Copy, Focus, GripVertical, Layout, MoreHorizontal, Plus, Trash2, Film } from "lucide-react";
 
 import StyleSettings from "./StyleSettings";
 import CanvasSettings from "./CanvasSettings";
 import { ZoomControls } from "./ZoomControls";
+import SceneTransitionsPanel from "./SceneTransitionsPanel";
 import { useSceneStore } from "@/store/sceneStore";
 import { useProjectStore } from "@/store/projectStore";
 import type { ZoomEvent } from "@/types/zoom";
@@ -29,7 +30,7 @@ export default function RightSidebar() {
       <div className="h-screen border-l border-gray-200 flex flex-col justify-between relative z-50 bg-white">
         <Tabs defaultValue="pages" className="flex flex-col w-full relative gap-1">
           <div className="px-2 pt-2 pb-0 absolute bg-gray-50/50 backdrop-blur-md z-50 w-full">
-            <TabsList className="bg-gray-200/40 relative items-center justify-center p-1 grid grid-cols-4 rounded-xl border border-gray-200 w-full">
+            <TabsList className="bg-gray-200/40 relative items-center justify-center p-1 grid grid-cols-5 rounded-xl border border-gray-200 w-full">
               <TabsTrigger value="pages" className="text-xs py-1 font-inter">Scenes</TabsTrigger>
               <TabsTrigger value="canvas" className="text-xs py-1 font-inter">Canvas</TabsTrigger>
               <TabsTrigger value="styles" className="text-xs py-1 font-inter">Styles</TabsTrigger>
@@ -40,6 +41,10 @@ export default function RightSidebar() {
                     {zoomEvents.length}
                   </span>
                 )}
+              </TabsTrigger>
+              <TabsTrigger value="transitions" className="text-xs py-1 font-inter">
+                <Film className="h-3 w-3 mr-1 inline" />
+                Transitions
               </TabsTrigger>
             </TabsList>
           </div>
@@ -131,7 +136,7 @@ export default function RightSidebar() {
                               <div>
                                 <p className="text-sm font-medium">Zoom {zoom.zoomLevel}x</p>
                                 <p className="text-xs text-gray-500">
-                                  at {zoom.startTime.toFixed(1)}s • {zoom.duration}s duration
+                                  at {(zoom.startTime || 0).toFixed(1)}s • {zoom.duration}s duration
                                 </p>
                               </div>
                             </div>
@@ -164,6 +169,12 @@ export default function RightSidebar() {
                   )}
                 </div>
               )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="transitions" className="flex-1 outline-none mt-2 pt-12 w-full overflow-y-auto max-h-[calc(100vh)] h-full !mt-0 pb-10">
+            <div className="p-3">
+              <SceneTransitionsPanel />
             </div>
           </TabsContent>
         </Tabs>

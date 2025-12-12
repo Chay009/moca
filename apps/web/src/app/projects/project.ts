@@ -22,27 +22,58 @@ import { useProjectStore } from '@/store/projectStore';
 // Lazy project creation - only create when first accessed
 // This ensures it's created on client side after custom elements are registered
 let projectInstance: Project | null = null;
+let lastScenesHash: string | null = null;
 
-export function getProject(): Project {
-  if (!projectInstance) {
-    const canvasSize = useProjectStore.getState().canvasSize;
+export function getProject(customScenes?: Scene[]): Project {
+  const canvasSize = useProjectStore.getState().canvasSize;
 
-    projectInstance = makeProject({
-      scenes: [MainScene],
-      variables: {},
-      experimentalFeatures: true,
-      settings: {
-        shared: {
-          size: new Vector2(canvasSize.width, canvasSize.height),
-          background: '#000000',
+  // If customScenes provided, use multi-scene architecture
+  if (customScenes && customScenes.length > 0) {
+    // Create hash of scenes to detect changes
+    const scenesHash = JSON.stringify(customScenes.map(s => ({ id: s.id, elements: s.elements?.length })));
+
+    // Recreate project if scenes changed
+    if (!projectInstance || scenesHash !== lastScenesHash) {
+      const sceneDescriptions = createProjectFromScenes(customScenes);
+      lastScenesHash = scenesHash;
+
+      projectInstance = makeProject({
+        scenes: sceneDescriptions,
+        variables: {},
+        experimentalFeatures: true,
+        settings: {
+          shared: {
+            size: new Vector2(canvasSize.width, canvasSize.height),
+            background: '#000000',
+          },
+          preview: {
+            fps: 30,
+            resolutionScale: 1,
+          },
         },
-        preview: {
-          fps: 30,
-          resolutionScale: 1,
+      });
+    }
+  } else {
+    // Fallback to single MainScene for backward compatibility
+    if (!projectInstance) {
+      projectInstance = makeProject({
+        scenes: [MainScene],
+        variables: {},
+        experimentalFeatures: true,
+        settings: {
+          shared: {
+            size: new Vector2(canvasSize.width, canvasSize.height),
+            background: '#000000',
+          },
+          preview: {
+            fps: 30,
+            resolutionScale: 1,
+          },
         },
-      },
-    });
+      });
+    }
   }
+
   return projectInstance;
 }
 

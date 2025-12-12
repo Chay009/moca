@@ -15,6 +15,7 @@ import { AddElements } from "./components/AddElements"
 import { useProjectStore } from "@/store/projectStore"
 import { AspectRatio } from "@/components/ui/aspect-ratio"
 // Dynamic imports
+const LeftSidebar = dynamic(() => import("./components/LeftSideBar"), { ssr: false })
 const RightSidebar = dynamic(() => import("./components/RightSideBar"), { ssr: false })
 const PlayerControls = dynamic(() => import("./components/PlayerControls").then(mod => ({ default: mod.PlayerControls })), { ssr: false })
 const CanvasPlayer = dynamic(() => import("./components/CanvasPlayer").then(mod => ({ default: mod.CanvasPlayer })), { ssr: false })
@@ -49,20 +50,8 @@ export default function EditorPage() {
       {/* MAIN WORKSPACE */}
       <div className="flex-1 flex overflow-hidden">
 
-        {/* LEFT SIDEBAR - SCENES */}
-        <div className="w-48 border-r bg-muted/10 flex flex-col shrink-0">
-          <div className="p-3 border-b bg-background">
-            <span className="text-xs font-semibold uppercase text-muted-foreground">Scenes</span>
-          </div>
-          <div className="p-2 overflow-y-auto flex-1">
-            <div className="grid grid-cols-2 gap-2">
-              <div className="aspect-video bg-background border rounded-md shadow-sm flex items-center justify-center text-xs text-muted-foreground">1</div>
-              <div className="aspect-video bg-background border rounded-md shadow-sm flex items-center justify-center text-xs text-muted-foreground">2</div>
-              <div className="aspect-video bg-background border rounded-md shadow-sm flex items-center justify-center text-xs text-muted-foreground">3</div>
-              <div className="aspect-video bg-background border rounded-md shadow-sm flex items-center justify-center text-xs text-muted-foreground">4</div>
-            </div>
-          </div>
-        </div>
+        {/* LEFT SIDEBAR - SCENES & EFFECTS */}
+        <LeftSidebar />
 
         {/* CENTER - CANVAS + TIMELINE */}
         <div className="flex-1 flex flex-col bg-muted/30">

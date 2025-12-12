@@ -91,27 +91,48 @@ export const PlayerControls = ({
   const currentSceneIndex = useSceneStore((state) => state.currentSceneIndex);
   const currentTime = useSceneStore((state) => state.currentTime);
   const isPlaying = useSceneStore((state) => state.isPlaying);
+  const playMode = useSceneStore((state) => state.playMode);
 
   // Store actions
   const setCurrentScene = useSceneStore((state) => state.setCurrentScene);
   const setIsPlaying = useSceneStore((state) => state.setIsPlaying);
   const setCurrentTime = useSceneStore((state) => state.setCurrentTime);
+  const setPlayMode = useSceneStore((state) => state.setPlayMode);
   const getTotalDuration = useSceneStore((state) => state.getTotalDuration);
   const addScene = useSceneStore((state) => state.addScene);
   const removeScene = useSceneStore((state) => state.removeScene);
   const canvasSize = useProjectStore((state) => state.canvasSize);
+  const setAspectRatio = useProjectStore((state) => state.setAspectRatio);
 
   // Local state
   const [volume, setVolume] = useState(100);
   const [isMuted, setIsMuted] = useState(false);
   const [selectedCanvasSize, setSelectedCanvasSize] = useState<CanvasSize>('desktop');
-  const [playMode, setPlayMode] = useState<'scene' | 'all'>('scene'); // Play current scene or all
   const timelineRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
 
   const totalDuration = getTotalDuration();
   const currentScene = scenes[currentSceneIndex];
+
+  // Apply canvas size when selection changes
+  const handleCanvasSizeChange = (sizeId: CanvasSize) => {
+    setSelectedCanvasSize(sizeId);
+    const size = CANVAS_SIZES.find(s => s.id === sizeId);
+    if (size && size.ratio !== 'Custom') {
+      // Map to aspect ratio format
+      const ratioMap: Record<string, '16:9' | '9:16' | '1:1' | '4:3'> = {
+        '16:9': '16:9',
+        '9:16': '9:16',
+        '1:1': '1:1',
+        '4:3': '4:3',
+      };
+      const aspectRatio = ratioMap[size.ratio];
+      if (aspectRatio) {
+        setAspectRatio(aspectRatio);
+      }
+    }
+  };
 
   // Calculate cumulative time for each scene
   const getSceneStartTime = (index: number) => {
@@ -124,6 +145,7 @@ export const PlayerControls = ({
 
   // Format time as MM:SS or SS.SS
   const formatTime = (seconds: number) => {
+    if (seconds === undefined || seconds === null || isNaN(seconds)) return '0.00s';
     if (seconds < 60) {
       return `${seconds.toFixed(2)}s`;
     }
@@ -134,6 +156,14 @@ export const PlayerControls = ({
 
   // Playback controls
   const handlePlayPause = () => {
+    if (!isPlaying) {
+      // Starting playback - check if we need to reset to start
+      const sceneEndTime = getSceneEndTime(currentSceneIndex);
+      if (currentTime >= sceneEndTime) {
+        // We're at or past the end of the scene, reset to scene start
+        setCurrentTime(getSceneStartTime(currentSceneIndex));
+      }
+    }
     setIsPlaying(!isPlaying);
   };
 
@@ -437,7 +467,7 @@ export const PlayerControls = ({
           {/* Right Side Controls */}
           <div className="flex items-center gap-2">
             {/* Canvas Size */}
-            <Select value={selectedCanvasSize} onValueChange={(v) => setSelectedCanvasSize(v as CanvasSize)}>
+            <Select value={selectedCanvasSize} onValueChange={(v) => handleCanvasSizeChange(v as CanvasSize)}>
               <SelectTrigger className="w-[160px] h-9">
                 <SelectValue />
               </SelectTrigger>
@@ -560,7 +590,7 @@ export const PlayerControls = ({
                     <div className="flex items-center gap-1 text-xs text-neutral-600">
                       <Clock className="h-3 w-3" />
                       <span className="font-medium tabular-nums">
-                        {scene.duration.toFixed(2)}s
+                        {(scene.duration || 0).toFixed(2)}s
                       </span>
                     </div>
                   </div>

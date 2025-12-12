@@ -26,11 +26,11 @@ export const AddElements = () => {
       return
     }
 
-    const component = getComponentByType('text-simple')
+    const component = getComponentByType('text')
     if (component) {
       addElementToScene(currentScene.id, {
-        type: 'text-simple',
-        properties: getDefaultProps('text-simple'),
+        type: 'text',
+        properties: getDefaultProps('text'),
       })
       toast.success(`${component.displayName} added`)
     } else {

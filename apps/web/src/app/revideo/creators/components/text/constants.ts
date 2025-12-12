@@ -1,18 +1,16 @@
 /**
  * Text Effect Constants - Exports metadata for UI components
- * Maps new component registry to old preset format for backward compatibility
+ * Updated for new registry-based text component system
  */
 
 import { textComponents } from './registry';
 
-export type TextEffectPresetType = 'text-simple' | 'text-bounce' | 'text-shining';
+export type TextEffectPresetType = 'text';
 
-export type TextEffectCategory = 'basic' | 'animated' | 'glowing';
+export type TextEffectCategory = 'basic';
 
 export const TEXT_EFFECT_CATEGORIES = {
   BASIC: 'basic' as const,
-  ANIMATED: 'animated' as const,
-  GLOWING: 'glowing' as const,
 };
 
 export interface TextEffectPresetMetadata {
@@ -28,16 +26,9 @@ export const TEXT_EFFECT_PRESET_METADATA: TextEffectPresetMetadata[] = Object.va
   id: component.type as TextEffectPresetType,
   label: component.displayName,
   description: `${component.displayName} effect`,
-  category: getCategoryForComponent(component.type),
+  category: 'basic' as TextEffectCategory,
   defaultConfig: component.defaultProps,
 }));
-
-function getCategoryForComponent(type: string): TextEffectCategory {
-  if (type === 'text-simple') return 'basic';
-  if (type === 'text-bounce') return 'animated';
-  if (type === 'text-shining') return 'glowing';
-  return 'basic';
-}
 
 export function getPresetsByCategory(category: TextEffectCategory): TextEffectPresetMetadata[] {
   return TEXT_EFFECT_PRESET_METADATA.filter((preset) => preset.category === category);

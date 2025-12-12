@@ -1,10 +1,24 @@
-dithering,shaders which are shiny
+dithering,shaders which are shiny noise
+https://x.com/jameslaurents/status/1998539098521543088?s=20
+https://x.com/DerekFeehrer/status/1999178474872012956?s=20
+
+this is simple record using cursorful and add 3d laptop in revideo and add the video inside it 
+this is not hard one is shaders bg and other this same cicular <shape shaders> and out threejs mobile and zoom to the text and other scene
+
+
+https://x.com/reggitales/status/1999184101442826448?s=20
+
+for all these we creare a base and then hire team to make these
+https://www.youtube.com/watch?v=aAvDI1qae-U
+https://x.com/testingcatalog/status/1998798918168228078?s=20
+https://x.com/shadcnblocks/status/1998748223650017290?s=20
+this 
 1. is orcshot which is parmantirc video en
 2.one is video editor +ai
 3. like ai gen ike hera.video and reelroll- which we genera genrator functions with4.  some assts
 4. is screenity.pro 
 5. ou  video editor included rotato.app and slanit as well but better seprate this acts as engine
-
+previwed.app is aso like rotato.app
 reeroll,hera,jitter have stempates copy them
 and for the effect i got one idea one is transition between two scene via text zoom it like O going inside the o by camera and clip the other scene to shift
 

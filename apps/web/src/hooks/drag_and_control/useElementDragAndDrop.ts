@@ -44,6 +44,7 @@ export function useElementDragAndDrop({
 
   // Sync to store for other components (PropertyPanel) - one way only
   const syncSelectedToStore = useSceneStore((state) => state.setSelectedElementId);
+  const syncSelectedNodeToStore = useSceneStore((state) => state.setSelectedRevideoNode);
 
   // Drag state
   const [draggingElement, setDraggingElement] = useState<{ id: string; node: Shape } | null>(null);
@@ -106,10 +107,26 @@ export function useElementDragAndDrop({
       overlayBoxRef.current.style.transform = `rotate(${rotation}deg)`;
       overlayBoxRef.current.style.transformOrigin = 'center center';
 
+      // Check if values actually changed to prevent infinite loop
+      const currentLeft = initialLeftSignal.current();
+      const currentTop = initialTopSignal.current();
+      const currentWidth = initialWidthSignal.current();
+      const currentHeight = initialHeightSignal.current();
+
+      const newLeft = screenCenter.x - screenWidth / 2 - playerRect.left;
+      const newTop = screenCenter.y - screenHeight / 2 - playerRect.top;
+
+      if (Math.abs(currentLeft - newLeft) < 0.1 &&
+        Math.abs(currentTop - newTop) < 0.1 &&
+        Math.abs(currentWidth - screenWidth) < 0.1 &&
+        Math.abs(currentHeight - screenHeight) < 0.1) {
+        return;
+      }
+
       // ✅ CRITICAL: Update signals with new baseline values
       // This ensures next drag/resize starts from correct position
-      initialLeftSignal.current(screenCenter.x - screenWidth / 2 - playerRect.left);
-      initialTopSignal.current(screenCenter.y - screenHeight / 2 - playerRect.top);
+      initialLeftSignal.current(newLeft);
+      initialTopSignal.current(newTop);
       initialWidthSignal.current(screenWidth);
       initialHeightSignal.current(screenHeight);
 
@@ -205,6 +222,7 @@ export function useElementDragAndDrop({
           setDraggingElement({ id: elementId, node: hitNode });
           setSelectedElementId(elementId);
           syncSelectedToStore(elementId);
+          syncSelectedNodeToStore(hitNode); // Store Revideo node for StyleSettings
 
           // Update overlay box position immediately
           if (overlayBoxRef.current && playerRect) {

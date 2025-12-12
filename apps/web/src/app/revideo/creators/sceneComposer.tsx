@@ -25,6 +25,10 @@ interface NodeWithConfig {
   node: any;
   config: AnimationConfig;
   elementType: string;
+  /** Optional animate method from AnimatedComponent */
+  animate?: () => Generator<any, void, any>;
+  /** Reference to main element for external animation */
+  ref?: any;
 }
 
 /**
@@ -39,13 +43,27 @@ export function renderScene(view: any, scene: SceneData): NodeWithConfig[] {
 
   // Step 2: Add all elements using component registry
   for (const element of scene.elements) {
-    const node = createComponent({
+    // DEBUG: Log the actual properties being used
+    console.log(`🔧 Creating ${element.type} with props:`, {
+      id: element.id,
+      fontSize: element.properties?.fontSize,
+      text: element.properties?.text,
+      x: element.properties?.x,
+      y: element.properties?.y,
+    });
+
+    const componentResult = createComponent({
       elementId: element.id,
       type: element.type,
       ...element.properties,
-    });
+    }) as any; // Cast to any - runtime handles all cases
 
-    if (node) {
+    if (componentResult) {
+      // NEW PATTERN: componentResult is { node, ref, animate? } OR legacy Node
+      // Extract the actual node to add to view
+      const node = componentResult.node ?? componentResult; // Fallback for legacy components
+      const hasAnimateMethod = componentResult.animate && typeof componentResult.animate === 'function';
+
       // Set initial opacity to 0 for entrance animation
       if (typeof node.opacity === 'function') {
         node.opacity(0);
@@ -69,6 +87,9 @@ export function renderScene(view: any, scene: SceneData): NodeWithConfig[] {
           startTime: animConfig.startTime || 0,
         },
         elementType: element.type,
+        // NEW: Store animate function if component has one
+        animate: hasAnimateMethod ? componentResult.animate : undefined,
+        ref: componentResult.ref,
       });
     }
   }
@@ -103,13 +124,17 @@ export function renderContentOnly(target: any, scene: SceneData): NodeWithConfig
 
   // Add all elements (skip background)
   for (const element of scene.elements) {
-    const node = createComponent({
+    const componentResult = createComponent({
       elementId: element.id,
       type: element.type,
       ...element.properties,
-    });
+    }) as any; // Cast to any - runtime handles all cases
 
-    if (node) {
+    if (componentResult) {
+      // NEW PATTERN: componentResult is { node, ref, animate? } OR legacy Node
+      const node = componentResult.node ?? componentResult;
+      const hasAnimateMethod = componentResult.animate && typeof componentResult.animate === 'function';
+
       // Set initial opacity to 0 for entrance animation
       if (typeof node.opacity === 'function') {
         node.opacity(0);
@@ -130,6 +155,8 @@ export function renderContentOnly(target: any, scene: SceneData): NodeWithConfig
           startTime: animConfig.startTime || 0,
         },
         elementType: element.type,
+        animate: hasAnimateMethod ? componentResult.animate : undefined,
+        ref: componentResult.ref,
       });
     }
   }

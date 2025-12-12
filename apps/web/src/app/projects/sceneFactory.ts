@@ -1,112 +1,104 @@
 /**
  * Scene Factory - Converts custom Scene data to Revideo SceneDescription
  * Creates one SceneDescription per custom scene (not one MainScene for all)
- * Uses new component system with full property support
+ * Uses new component system with full property support + real scene transitions
+ * 
+ * REACTIVE UPDATES: Scenes read fresh data from useScene().variables.get('scenes')
+ * so property changes in the store are reflected immediately without project recreation!
  */
 import { makeScene2D } from '@revideo/2d';
-import { all, waitFor } from '@revideo/core';
-import type { Scene } from '@/types/project';
+import { all, waitFor, useScene } from '@revideo/core';
+import type { Scene, SceneTransitionConfig } from '@/types/project';
 import { renderScene } from '@/app/revideo/creators/sceneComposer';
+import { getTransition } from '@/app/revideo/creators/presets/sceneTransitions';
 
 /**
  * Create a Revideo scene generator for a single custom scene
  * Each custom scene becomes its own Revideo scene
  * Supports animations, text effects, and audio
  */
-export function createSceneGenerator(customScene: Scene) {
-  // Return the raw generator function wrapped with makeScene2D
-  // makeScene2D handles the wrapping for Revideo's internal system
+export function createSceneGenerator(customScene: Scene, sceneIndex: number) {
   return makeScene2D(customScene.id, function* (view) {
-    const transitionDuration = 0.5;
+    console.log(`🎬 SceneFactory: Creating scene ${customScene.id}`);
 
-    // Render scene using shared composer - returns NodeWithConfig[]
-    const sceneNodes = renderScene(view, customScene);
+    // Read fresh scene data from Revideo variables (updated by CanvasPlayer)
+    // Falls back to baked-in customScene if variables not set
+    const variables = useScene().variables;
+    const allScenes = variables.get('scenes', null) as unknown as Scene[] | null;
+    const currentSceneData = allScenes?.[sceneIndex] ?? customScene;
 
-    console.log(`🎬 SceneFactory: Rendered ${sceneNodes.length} nodes for scene ${customScene.id}`);
-    console.log(`📋 Scene has ${customScene.elements?.length || 0} elements`);
-
-    // Animate scene entry based on transition type
-    // Filter nodes that support animations
-    // sceneNodes is NodeWithConfig[], so we destructure {node}
-    const animatableNodes = sceneNodes.filter((item) => {
-      const { node, elementType } = item;
-      const hasOpacity = typeof node?.opacity === 'function';
-      console.log(`🔍 Node check: ${elementType}, hasOpacity: ${hasOpacity}`);
-      return hasOpacity;
-    });
-
-    console.log(`🎭 Found ${animatableNodes.length} animatable nodes out of ${sceneNodes.length} total nodes`);
-
-    if (customScene.transition === 'fade' && animatableNodes.length > 0) {
-      // Fade in: opacity 0 -> 1, scale 0.9 -> 1
-      animatableNodes.forEach(({ node }) => {
-        if (node.opacity) node.opacity(0);
-        if (node.scale) node.scale(0.9);
-      });
-
-      yield* all(
-        ...animatableNodes.map(({ node }) =>
-          all(
-            node.opacity(1, transitionDuration),  // Always fade to fully visible
-            node.scale ? node.scale(1, transitionDuration) : node.opacity(1, 0)
-          )
-        )
+    // DEBUG: Log actual values from variables
+    console.log(`📦 Using ${allScenes ? 'FRESH' : 'BAKED'} scene data for ${customScene.id}`);
+    if (allScenes) {
+      console.log('🔍 Variables fontSize:',
+        currentSceneData.elements?.map(e => ({ id: e.id, fontSize: e.properties?.fontSize }))
       );
-    } else if (customScene.transition === 'slide' && animatableNodes.length > 0) {
-      // Slide in: start off-screen and invisible, slide to position and fade in
-      animatableNodes.forEach(({ node }) => {
-        const originalX = node.position?.x?.() ?? 0;
-        (node as any)._originalX = originalX;
-        if (node.opacity) node.opacity(0);
-        if (node.position?.x) node.position.x(originalX + 1000);
-      });
+    }
 
-      yield* all(
-        ...animatableNodes.map(({ node }) => {
-          const originalX = (node as any)._originalX ?? 0;
-          return all(
-            node.position?.x ? node.position.x(originalX, transitionDuration) : node.opacity(1, 0),
-            node.opacity(1, transitionDuration * 0.5)  // Always fade to fully visible
-          );
-        })
-      );
-    } else {
-      // No transition OR fallback if filter failed - set to full opacity immediately
-      console.log('⚡ No transition (or fallback) - setting opacity to 1 immediately');
+    // STEP 1: Render scene content FIRST (required before transition)
+    const sceneNodes = renderScene(view, currentSceneData);
+    console.log(`📋 Rendered ${sceneNodes.length} nodes for scene ${currentSceneData.id}`);
 
-      // If animatableNodes is empty but we have sceneNodes, try to set opacity on everything blindly
-      const nodesToReset = animatableNodes.length > 0 ? animatableNodes : sceneNodes;
+    // STEP 2: Apply REAL entrance transition (uses useTransition internally)
+    if (customScene.transition) {
+      const transitionConfig = typeof customScene.transition === 'string'
+        ? { type: customScene.transition, enabled: true, duration: 0.8 }
+        : customScene.transition as SceneTransitionConfig;
 
-      nodesToReset.forEach((item) => {
-        const n = item.node;
-        if (n && typeof n.opacity === 'function') {
-          console.log(`⚡ Setting opacity to 1 for node: ${item.elementType}`);
-          n.opacity(1);
+      if (transitionConfig.enabled && transitionConfig.type !== 'none') {
+        const transition = getTransition(transitionConfig.type);
+        if (transition) {
+          console.log(`✨ Applying transition: ${transition.name}`);
+          yield* transition.generator(transitionConfig.duration || transition.duration);
         }
-      });
+      }
     }
 
-    // Hold scene for its duration (minus transitions)
-    const holdTime = Math.max(0, customScene.duration - transitionDuration * 2);
-    if (holdTime > 0) {
-      yield* waitFor(holdTime);
-    }
+    // STEP 3: Fade in elements (entrance animations)
+    const animatableNodes = sceneNodes.filter((item) => typeof item.node?.opacity === 'function');
+    console.log(`🎭 Found ${animatableNodes.length} animatable nodes`);
 
-    // Animate scene exit (only for animatable nodes)
-    if (animatableNodes.length > 0) {
+    yield* all(
+      ...animatableNodes.map(({ node, config }) => {
+        const duration = config.entrance?.duration || 0.5;
+        return node.opacity(1, duration);
+      })
+    );
+
+    // STEP 4: Run text effect animations during scene
+    const componentsWithAnimation = sceneNodes.filter(item => typeof item.animate === 'function');
+    if (componentsWithAnimation.length > 0) {
+      console.log(`🎬 Running ${componentsWithAnimation.length} text effect animations`);
       yield* all(
-        ...animatableNodes.map(({ node }) =>
-          node.opacity(0, transitionDuration)
-        )
+        ...componentsWithAnimation.map(item => item.animate!())
       );
     }
 
-    // Remove all nodes
-    sceneNodes.forEach(({ node }) => {
-      if (node && typeof node.remove === 'function') {
-        node.remove();
-      }
-    });
+    // STEP 5: Hold for remaining duration
+    // We want the total scene duration to match customScene.duration
+    // So we subtract the time already spent on Transitions, Entrances, and Text Animations.
+    // We also reserve space for Exit animations at the end.
+    const currentTime = useScene().playback.time;
+    const exitDuration = Math.max(...sceneNodes.map(n => n.config.exit?.duration || 0.0));
+    const remainingTime = Math.max(0, customScene.duration - currentTime - exitDuration);
+
+    if (remainingTime > 0) {
+      console.log(`⏱️ Holding for remaining ${remainingTime.toFixed(2)}s (Current: ${Number(currentTime).toFixed(2)}s, Target: ${customScene.duration}s)`);
+      yield* waitFor(remainingTime);
+    } else {
+      console.warn(`⚠️ Scene animations (${Number(currentTime).toFixed(2)}s) exceeded target duration (${customScene.duration}s)`);
+    }
+
+    // STEP 6: Fade out elements (exit animations)
+    yield* all(
+      ...animatableNodes.map(({ node, config }) => {
+        const duration = config.exit?.duration || 0.5;
+        return node.opacity(0, duration);
+      })
+    );
+
+    // NO manual cleanup - Motion Canvas PlaybackManager handles scene lifecycle
+    // The previous scene needs to stay alive for the next scene's transition
   });
 }
 
@@ -120,6 +112,6 @@ export function createSceneGenerator(customScene: Scene) {
 export function createProjectFromScenes(customScenes: Scene[]) {
   // Map each custom scene to a Revideo scene description
   // makeScene2D already wraps it properly for makeProject()
-  const sceneDescriptions = customScenes.map((scene) => createSceneGenerator(scene));
+  const sceneDescriptions = customScenes.map((scene, index) => createSceneGenerator(scene, index));
   return sceneDescriptions;
 }
