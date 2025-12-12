@@ -154,6 +154,18 @@ export const PlayerControls = ({
     return `${mins}:${secs}`;
   };
 
+  // Helper to get Revideo player and set fresh variables before scene restart
+  const ensureFreshVariablesForRestart = () => {
+    const player = (window as any).__revideoPlayer;
+    if (player) {
+      player.setVariables({
+        scenes,
+        currentSceneIndex
+      });
+      console.log('🔄 Variables set before scene restart');
+    }
+  };
+
   // Playback controls
   const handlePlayPause = () => {
     if (!isPlaying) {
@@ -161,6 +173,8 @@ export const PlayerControls = ({
       const sceneEndTime = getSceneEndTime(currentSceneIndex);
       if (currentTime >= sceneEndTime) {
         // We're at or past the end of the scene, reset to scene start
+        // Set fresh variables BEFORE the seek/reset
+        ensureFreshVariablesForRestart();
         setCurrentTime(getSceneStartTime(currentSceneIndex));
       }
     }
@@ -168,6 +182,8 @@ export const PlayerControls = ({
   };
 
   const handleStop = () => {
+    // Set fresh variables BEFORE the seek/reset
+    ensureFreshVariablesForRestart();
     setIsPlaying(false);
     setCurrentTime(getSceneStartTime(currentSceneIndex));
   };
@@ -282,15 +298,19 @@ export const PlayerControls = ({
     if (playMode === 'scene') {
       // Stop at end of current scene
       if (currentTime >= sceneEndTime) {
+        // Set fresh variables before restart
+        ensureFreshVariablesForRestart();
         setIsPlaying(false);
         setCurrentTime(getSceneStartTime(currentSceneIndex));
       }
     } else {
       // Continue to next scene
       if (currentTime >= sceneEndTime && currentSceneIndex < scenes.length - 1) {
+        ensureFreshVariablesForRestart();
         setCurrentScene(currentSceneIndex + 1);
       } else if (currentTime >= totalDuration) {
         // Stop at end of all scenes
+        ensureFreshVariablesForRestart();
         setIsPlaying(false);
         setCurrentTime(0);
         setCurrentScene(0);
